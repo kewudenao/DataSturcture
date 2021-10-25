@@ -1,31 +1,32 @@
 package dataStructure.arithmetic;
-
+// kmp  https://blog.csdn.net/v_july_v/article/details/7041827#t10
 public class KMP {
-	void getNext(String T,int[] next ){
+	public static void main(String[] args) {
 
+		int[] next = GetNext("abcdef");
+		System.out.println(next);
 	}
 
-	void  get_next(String  S,  int [] next) {
-		int  i,  j;
-		i  =  1;
-		j  =  0;
-		char[] T = S.toCharArray();
-		next[0]  =  0;
-		/*  此处T[0]表示串T的长度  */
-		while  (i  <  T.length)
-		{/*  T[i]表示后缀的单个字符，  */
-			/*
-		 T[j]表示前缀的单个字符  */
-			if  (j  ==  0  ||  T[i]  ==  T[j])
-			{
-				++i;
+	static int[] GetNext(String p1) {
+		int pLen = p1.length();
+		char[] p = p1.toCharArray();
+		int[] next = new int[p.length];
+		next[0] = -1;
+		int k = -1;
+		int j = 0;
+		while (j < pLen-1 ) {
+			//p[k]表示前缀，p[j]表示后缀
+			if (k == -1 || p[j] == p[k]) {
+				++k;
 				++j;
-				next[i]  =  j;
-			}else/*  若字符不相同，则j值回溯  */
-				j  =  next[j];
+				next[j] = k;
+			} else {
+				k = next[k];
+			}
 		}
+		return next;
 	}
-	}
+}
 
 
 
