@@ -14,5 +14,9 @@ public class FileTest {
 		if (fruit!=null){
 			fruit.eat();
 		}
+		String a = "asdfasdf";
+		a = "sadfasdf";
+		System.out.println(a);
+
 	}
 }
