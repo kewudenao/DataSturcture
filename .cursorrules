@@ -1,0 +1,36 @@
+## Cursor Rules (Strict)
+
+### Scope
+- This is a Java 8 Maven project. Keep changes minimal and focused.
+- Do not touch files under /target or other build artifacts.
+- Prefer editing existing code over introducing new files unless required.
+
+### Repo Navigation
+- Use Glob/rg/ReadFile tools for discovery and reading.
+- Avoid shell commands like cat/ls/grep/find for file operations.
+- Verify parent directories exist before creating new files or folders.
+
+### Code Changes
+- Preserve existing style, naming, and package structure.
+- Keep logic changes small, with clear intent.
+- Add short comments only when logic is non-obvious.
+- Avoid introducing new dependencies unless necessary; if added, use the
+  package manager and pick the latest stable version.
+- Ensure new code is ASCII-only unless the file already contains Unicode.
+
+### Reliability & Safety
+- Avoid long-running processes (dev servers, watchers).
+- Do not delete or revert user changes unless explicitly asked.
+- Keep data access safe; handle nulls and errors thoughtfully.
+
+### Testing
+- After substantive edits, run the smallest relevant checks.
+- If tests are not available, mention what you would run.
+
+### Git Workflow
+- Keep commits small and descriptive.
+- Stage only relevant files.
+- Commit and push changes when tasks are complete.
+
+### Output
+- Summaries should be concise and list key changes and any follow-ups.
