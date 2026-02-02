@@ -1,5 +1,10 @@
 package com.example.fault.db;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -42,23 +47,12 @@ public final class DatabaseInitializer {
                 "signal_type VARCHAR(32) NOT NULL," +
                 "signal_name VARCHAR(128) NOT NULL" +
                 ")");
-
-            statement.execute("CREATE TABLE IF NOT EXISTS signal_fault_rule (" +
-                "id IDENTITY PRIMARY KEY," +
-                "car_series VARCHAR(64) NOT NULL," +
-                "project VARCHAR(64) NOT NULL," +
-                "signal_name VARCHAR(128) NOT NULL," +
-                "operator VARCHAR(8) NOT NULL," +
-                "threshold DOUBLE NOT NULL," +
-                "fault_type VARCHAR(64) NOT NULL," +
-                "fault_code VARCHAR(64) NOT NULL" +
-                ")");
         }
 
         seedHandlingData();
         seedFaultSignals();
         seedCollisionRepairSignals();
-        seedSignalFaultRules();
+        seedSignalFaultRulesFromScript();
     }
 
     private static void seedHandlingData() throws SQLException {
@@ -128,33 +122,11 @@ public final class DatabaseInitializer {
         statement.executeUpdate();
     }
 
-    private static void seedSignalFaultRules() throws SQLException {
-        if (!isTableEmpty("signal_fault_rule")) {
+    private static void seedSignalFaultRulesFromScript() throws SQLException {
+        if (!shouldInitializeSignalFaultRules()) {
             return;
         }
-
-        String sql = "INSERT INTO signal_fault_rule " +
-            "(car_series, project, signal_name, operator, threshold, fault_type, fault_code) " +
-            "VALUES (?, ?, ?, ?, ?, ?, ?)";
-        try (Connection connection = Database.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
-            insertSignalRule(statement, "Series-A", "Project-X", "SOC", "LT", 20, "Battery", "P_LOW");
-            insertSignalRule(statement, "Series-A", "Project-X", "PACK_VOLTAGE", "LT", 300, "Battery", "P_VOLT_LOW");
-            insertSignalRule(statement, "Series-B", "Project-Y", "BRAKE_PRESSURE", "LT", 15, "Brake", "B_PRESS_LOW");
-        }
-    }
-
-    private static void insertSignalRule(PreparedStatement statement, String carSeries, String project,
-                                         String signalName, String operator, double threshold,
-                                         String faultType, String faultCode) throws SQLException {
-        statement.setString(1, carSeries);
-        statement.setString(2, project);
-        statement.setString(3, signalName);
-        statement.setString(4, operator);
-        statement.setDouble(5, threshold);
-        statement.setString(6, faultType);
-        statement.setString(7, faultCode);
-        statement.executeUpdate();
+        runSqlScript("db/init_signal_fault_rule.sql");
     }
 
     private static boolean isTableEmpty(String tableName) throws SQLException {
@@ -167,5 +139,47 @@ public final class DatabaseInitializer {
             }
         }
         return true;
+    }
+
+    private static boolean shouldInitializeSignalFaultRules() throws SQLException {
+        try {
+            return isTableEmpty("signal_fault_rule");
+        } catch (SQLException ex) {
+            return true;
+        }
+    }
+
+    private static void runSqlScript(String resourcePath) throws SQLException {
+        StringBuilder builder = new StringBuilder();
+        try (InputStream inputStream = DatabaseInitializer.class.getClassLoader()
+            .getResourceAsStream(resourcePath)) {
+            if (inputStream == null) {
+                throw new IllegalStateException("SQL script not found: " + resourcePath);
+            }
+            try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    String trimmed = line.trim();
+                    if (trimmed.isEmpty() || trimmed.startsWith("--")) {
+                        continue;
+                    }
+                    builder.append(line).append('\n');
+                }
+            }
+        } catch (IOException ex) {
+            throw new IllegalStateException("Failed to read SQL script: " + resourcePath, ex);
+        }
+
+        String[] statements = builder.toString().split(";");
+        try (Connection connection = Database.getConnection();
+             Statement statement = connection.createStatement()) {
+            for (String sql : statements) {
+                String trimmed = sql.trim();
+                if (!trimmed.isEmpty()) {
+                    statement.execute(trimmed);
+                }
+            }
+        }
     }
 }
