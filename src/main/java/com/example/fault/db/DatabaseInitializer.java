@@ -42,11 +42,23 @@ public final class DatabaseInitializer {
                 "signal_type VARCHAR(32) NOT NULL," +
                 "signal_name VARCHAR(128) NOT NULL" +
                 ")");
+
+            statement.execute("CREATE TABLE IF NOT EXISTS signal_fault_rule (" +
+                "id IDENTITY PRIMARY KEY," +
+                "car_series VARCHAR(64) NOT NULL," +
+                "project VARCHAR(64) NOT NULL," +
+                "signal_name VARCHAR(128) NOT NULL," +
+                "operator VARCHAR(8) NOT NULL," +
+                "threshold DOUBLE NOT NULL," +
+                "fault_type VARCHAR(64) NOT NULL," +
+                "fault_code VARCHAR(64) NOT NULL" +
+                ")");
         }
 
         seedHandlingData();
         seedFaultSignals();
         seedCollisionRepairSignals();
+        seedSignalFaultRules();
     }
 
     private static void seedHandlingData() throws SQLException {
@@ -113,6 +125,35 @@ public final class DatabaseInitializer {
         throws SQLException {
         statement.setString(1, type);
         statement.setString(2, name);
+        statement.executeUpdate();
+    }
+
+    private static void seedSignalFaultRules() throws SQLException {
+        if (!isTableEmpty("signal_fault_rule")) {
+            return;
+        }
+
+        String sql = "INSERT INTO signal_fault_rule " +
+            "(car_series, project, signal_name, operator, threshold, fault_type, fault_code) " +
+            "VALUES (?, ?, ?, ?, ?, ?, ?)";
+        try (Connection connection = Database.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            insertSignalRule(statement, "Series-A", "Project-X", "SOC", "LT", 20, "Battery", "P_LOW");
+            insertSignalRule(statement, "Series-A", "Project-X", "PACK_VOLTAGE", "LT", 300, "Battery", "P_VOLT_LOW");
+            insertSignalRule(statement, "Series-B", "Project-Y", "BRAKE_PRESSURE", "LT", 15, "Brake", "B_PRESS_LOW");
+        }
+    }
+
+    private static void insertSignalRule(PreparedStatement statement, String carSeries, String project,
+                                         String signalName, String operator, double threshold,
+                                         String faultType, String faultCode) throws SQLException {
+        statement.setString(1, carSeries);
+        statement.setString(2, project);
+        statement.setString(3, signalName);
+        statement.setString(4, operator);
+        statement.setDouble(5, threshold);
+        statement.setString(6, faultType);
+        statement.setString(7, faultCode);
         statement.executeUpdate();
     }
 
