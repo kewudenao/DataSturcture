@@ -1,19 +1,17 @@
 #!/usr/bin/env python3
-"""Simple GET -> JSON -> Excel (openpyxl), auto paging."""
+"""Simple GET -> JSON -> TXT (one line per record), auto paging."""
 
 import json
 import time
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
-from openpyxl import Workbook
-
 URL = "https://api.example.com/items"
 START_PAGE = 1
 LIMIT = 10
 KEYWORD = "foo"  # set to None to omit
 ENABLED = True  # True/False/None
-OUTPUT = "data.xlsx"
+OUTPUT = "data.txt"
 SLEEP = 0.0  # seconds between pages
 
 # headers for request (add token/cookie here)
@@ -52,17 +50,8 @@ while True:
     if SLEEP > 0:
         time.sleep(SLEEP)
 
-wb = Workbook()
-ws = wb.active
-ws.title = "data"
-
-if all_rows:
-    headers = list(all_rows[0].keys())
-    ws.append(headers)
+with open(OUTPUT, "w", encoding="utf-8") as file:
     for row in all_rows:
-        ws.append([row.get(h) for h in headers])
-else:
-    ws.append(["no data"])
+        file.write(json.dumps(row, ensure_ascii=False) + "\n")
 
-wb.save(OUTPUT)
 print(f"done, rows={len(all_rows)}, output={OUTPUT}, total_pages={total_pages}")
